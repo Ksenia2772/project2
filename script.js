@@ -168,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function setCookie(name, value, days) {
         const date = new Date();
         date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-        document.cookie = `${name}=${value}; expires=${date.toUTCString()}; path=/`;
+        document.cookie = `${name}=${encodeURIComponent(value)}; expires=${date.toUTCString()}; path=/`;
     }
     
     function loadSavedData() {
@@ -178,11 +178,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const savedTour = getCookie('saved_tour');
         const savedMessage = getCookie('saved_message');
         
-        if (savedName) document.getElementById('name').value = savedName;
-        if (savedEmail) document.getElementById('email').value = savedEmail;
-        if (savedPhone) document.getElementById('phone').value = savedPhone;
-        if (savedTour) document.getElementById('tour').value = savedTour;
-        if (savedMessage) document.getElementById('message').value = savedMessage;
+        if (savedName) document.getElementById('name').value = decodeURIComponent(savedName);
+        if (savedEmail) document.getElementById('email').value = decodeURIComponent(savedEmail);
+        if (savedPhone) document.getElementById('phone').value = decodeURIComponent(savedPhone);
+        if (savedTour) document.getElementById('tour').value = decodeURIComponent(savedTour);
+        if (savedMessage) document.getElementById('message').value = decodeURIComponent(savedMessage);
     }
     
     function validateForm(data) {
@@ -273,6 +273,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 message: document.getElementById('message')?.value || ''
             };
             
+            setCookie('saved_name', formData.name, 365);
+            setCookie('saved_email', formData.email, 365);
+            setCookie('saved_phone', formData.phone, 365);
+            setCookie('saved_tour', formData.tour, 365);
+            setCookie('saved_message', formData.message, 365);
+            
             const errors = validateForm(formData);
             
             if (Object.keys(errors).length > 0) {
@@ -297,14 +303,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const result = await response.json();
                 
                 if (result.success) {
-                    setCookie('saved_name', formData.name, 365);
-                    setCookie('saved_email', formData.email, 365);
-                    setCookie('saved_phone', formData.phone, 365);
-                    setCookie('saved_tour', formData.tour, 365);
-                    setCookie('saved_message', formData.message, 365);
-                    
                     contactForm.reset();
-                    loadSavedData();
                     
                     const login = result.data.login;
                     const password = result.data.password;
@@ -564,5 +563,5 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    console.log('WorldTravel инициализирован с валидацией');
+    console.log('WorldTravel инициализирован с валидацией и cookies');
 });
