@@ -177,7 +177,7 @@ $total_count = count($applications);
                                     ?>
                                     <span class="badge tour-badge"><?= htmlspecialchars($tour_name) ?></span>
                                 </td>
-                                <td><?= htmlspecialchars(mb_substr($app['message'] ?? '', 0, 50)) ?></td>
+                                <td><?= htmlspecialchars(substr($app['message'] ?? '', 0, 50)) ?></td>
                                 <td><?= date('d.m.Y', strtotime($app['created_at'])) ?></td>
                                 <td class="actions">
                                     <a href="admin_edit.php?id=<?= $app['id'] ?>" class="btn btn-edit">✏️ Ред.</a>
