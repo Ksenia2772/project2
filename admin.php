@@ -7,30 +7,33 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
     exit;
 }
 
-$admin_login = $_SESSION['admin_login'];
-$message = '';
-$error = '';
-
-// Удаление заявки
-if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
-    $id = (int)$_GET['delete'];
+// Обработка AJAX-запроса на удаление
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    header('Content-Type: application/json');
+    $data = json_decode(file_get_contents('php://input'), true);
+    $id = $data['id'] ?? 0;
+    
+    if (!$id) {
+        echo json_encode(['success' => false, 'error' => 'Не указан ID']);
+        exit;
+    }
+    
     try {
         $stmt = $pdo->prepare("DELETE FROM travel_applications WHERE id = ?");
         $stmt->execute([$id]);
-        $message = "Заявка #$id успешно удалена";
+        
+        if ($stmt->rowCount() > 0) {
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Заявка не найдена']);
+        }
     } catch (PDOException $e) {
-        $error = "Ошибка при удалении";
+        echo json_encode(['success' => false, 'error' => 'Ошибка базы данных']);
     }
-}
-
-// Выход
-if (isset($_GET['logout'])) {
-    session_destroy();
-    header('Location: admin_login.php');
     exit;
 }
 
-// Получение всех заявок
+$admin_login = $_SESSION['admin_login'];
 $applications = $pdo->query("SELECT * FROM travel_applications ORDER BY id DESC")->fetchAll();
 $total_count = count($applications);
 ?>
@@ -79,19 +82,26 @@ $total_count = count($applications);
         }
         .stat-card .stat-number { font-size: 28px; font-weight: bold; }
         .stat-card .stat-label { font-size: 14px; margin-top: 5px; }
-        .message { background: #d4edda; color: #155724; padding: 15px 20px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #28a745; }
-        .error { background: #f8d7da; color: #721c24; padding: 15px 20px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #dc3545; }
+        .message {
+            background: #d4edda; color: #155724; padding: 15px 20px; border-radius: 10px;
+            margin-bottom: 20px; border-left: 4px solid #28a745; display: none;
+        }
+        .error {
+            background: #f8d7da; color: #721c24; padding: 15px 20px; border-radius: 10px;
+            margin-bottom: 20px; border-left: 4px solid #dc3545; display: none;
+        }
         .table-container { background: white; border-radius: 15px; overflow-x: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e1e1e1; }
         th { background: #f8f9fa; color: #333; font-weight: 600; }
         tr:hover { background: #f5f5f5; }
         .actions { display: flex; gap: 8px; flex-wrap: wrap; }
-        .btn { display: inline-block; padding: 6px 12px; border-radius: 5px; text-decoration: none; font-size: 13px; transition: all 0.2s; }
+        .btn { display: inline-block; padding: 6px 12px; border-radius: 5px; text-decoration: none; font-size: 13px; transition: all 0.2s; cursor: pointer; border: none; }
         .btn-edit { background: #ffc107; color: #333; }
         .btn-edit:hover { background: #e0a800; }
         .btn-delete { background: #dc3545; color: white; }
         .btn-delete:hover { background: #c82333; }
+        .btn-delete:disabled { opacity: 0.5; cursor: not-allowed; }
         .back-link { display: inline-block; margin-top: 20px; padding: 12px 24px; background: #6c757d; color: white; text-decoration: none; border-radius: 8px; }
         .empty-row td { text-align: center; padding: 40px; color: #999; }
         .badge {
@@ -117,18 +127,14 @@ $total_count = count($applications);
             </div>
         </div>
         
-        <?php if ($message): ?>
-            <div class="message"><?= htmlspecialchars($message) ?></div>
-        <?php endif; ?>
-        <?php if ($error): ?>
-            <div class="error"><?= htmlspecialchars($error) ?></div>
-        <?php endif; ?>
+        <div id="messageBox" class="message"></div>
+        <div id="errorBox" class="error"></div>
         
         <div class="stats-container">
             <h2>📊 Статистика</h2>
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-number"><?= $total_count ?></div>
+                    <div class="stat-number" id="totalCount"><?= $total_count ?></div>
                     <div class="stat-label">Всего заявок</div>
                 </div>
                 <div class="stat-card">
@@ -139,7 +145,7 @@ $total_count = count($applications);
         </div>
         
         <div class="table-container">
-            <table>
+            <table id="applicationsTable">
                 <thead>
                     <tr>
                         <th>ID</th>
@@ -153,14 +159,14 @@ $total_count = count($applications);
                         <th>Действия</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="tableBody">
                     <?php if (empty($applications)): ?>
-                        <tr class="empty-row">
+                        <tr class="empty-row" id="emptyRow">
                             <td colspan="9">Нет заявок для отображения</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($applications as $app): ?>
-                            <tr>
+                            <tr id="row_<?= $app['id'] ?>">
                                 <td><?= $app['id'] ?></td>
                                 <td><span class="badge"><?= htmlspecialchars($app['login']) ?></span></td>
                                 <td><?= htmlspecialchars($app['name']) ?></td>
@@ -181,7 +187,7 @@ $total_count = count($applications);
                                 <td><?= date('d.m.Y', strtotime($app['created_at'])) ?></td>
                                 <td class="actions">
                                     <a href="admin_edit.php?id=<?= $app['id'] ?>" class="btn btn-edit">✏️ Ред.</a>
-                                    <a href="?delete=<?= $app['id'] ?>" class="btn btn-delete" onclick="return confirm('Удалить заявку?')">🗑️ Удалить</a>
+                                    <button class="btn btn-delete" data-id="<?= $app['id'] ?>">🗑️ Удалить</button>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -192,5 +198,83 @@ $total_count = count($applications);
         
         <a href="index.html" class="back-link">← Вернуться на главную</a>
     </div>
+
+    <script>
+        function showMessage(text, isError = false) {
+            const messageBox = document.getElementById('messageBox');
+            const errorBox = document.getElementById('errorBox');
+            
+            if (isError) {
+                errorBox.innerHTML = text;
+                errorBox.style.display = 'block';
+                setTimeout(() => {
+                    errorBox.style.display = 'none';
+                }, 3000);
+            } else {
+                messageBox.innerHTML = text;
+                messageBox.style.display = 'block';
+                setTimeout(() => {
+                    messageBox.style.display = 'none';
+                }, 3000);
+            }
+        }
+        
+        async function deleteApplication(id) {
+            if (!confirm('Удалить заявку #' + id + '?')) {
+                return;
+            }
+            
+            const button = document.querySelector(`.btn-delete[data-id="${id}"]`);
+            const row = document.getElementById(`row_${id}`);
+            
+            button.disabled = true;
+            button.textContent = '⌛ Удаление...';
+            row.style.opacity = '0.5';
+            
+            try {
+                const response = await fetch('/project/admin.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ id: id })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    row.remove();
+                    showMessage('✅ Заявка #' + id + ' успешно удалена');
+                    
+                    const totalCountSpan = document.getElementById('totalCount');
+                    const currentCount = parseInt(totalCountSpan.textContent);
+                    totalCountSpan.textContent = currentCount - 1;
+                    
+                    const tbody = document.getElementById('tableBody');
+                    if (tbody.children.length === 0) {
+                        tbody.innerHTML = '<tr class="empty-row"><td colspan="9">Нет заявок для отображения</td></tr>';
+                    }
+                } else {
+                    showMessage('❌ Ошибка: ' + (result.error || 'Не удалось удалить заявку'), true);
+                    row.style.opacity = '1';
+                    button.disabled = false;
+                    button.textContent = '🗑️ Удалить';
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showMessage('❌ Ошибка соединения с сервером', true);
+                row.style.opacity = '1';
+                button.disabled = false;
+                button.textContent = '🗑️ Удалить';
+            }
+        }
+        
+        document.querySelectorAll('.btn-delete').forEach(button => {
+            button.addEventListener('click', () => {
+                const id = button.getAttribute('data-id');
+                deleteApplication(id);
+            });
+        });
+    </script>
 </body>
 </html>
