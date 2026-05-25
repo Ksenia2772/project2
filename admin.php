@@ -199,82 +199,82 @@ $total_count = count($applications);
         <a href="index.html" class="back-link">← Вернуться на главную</a>
     </div>
 
-    <script>
-        function showMessage(text, isError = false) {
-            const messageBox = document.getElementById('messageBox');
-            const errorBox = document.getElementById('errorBox');
-            
-            if (isError) {
-                errorBox.innerHTML = text;
-                errorBox.style.display = 'block';
-                setTimeout(() => {
-                    errorBox.style.display = 'none';
-                }, 3000);
-            } else {
-                messageBox.innerHTML = text;
-                messageBox.style.display = 'block';
-                setTimeout(() => {
-                    messageBox.style.display = 'none';
-                }, 3000);
-            }
+<script>
+    function showMessage(text, isError = false) {
+        const messageBox = document.getElementById('messageBox');
+        const errorBox = document.getElementById('errorBox');
+        
+        if (isError) {
+            errorBox.innerHTML = text;
+            errorBox.style.display = 'block';
+            setTimeout(() => {
+                errorBox.style.display = 'none';
+            }, 3000);
+        } else {
+            messageBox.innerHTML = text;
+            messageBox.style.display = 'block';
+            setTimeout(() => {
+                messageBox.style.display = 'none';
+            }, 3000);
+        }
+    }
+    
+    async function deleteApplication(id) {
+        if (!confirm('Удалить заявку #' + id + '?')) {
+            return;
         }
         
-        async function deleteApplication(id) {
-            if (!confirm('Удалить заявку #' + id + '?')) {
-                return;
-            }
+        const button = document.querySelector(`.btn-delete[data-id="${id}"]`);
+        const row = document.getElementById(`row_${id}`);
+        
+        button.disabled = true;
+        button.textContent = '⌛ Удаление...';
+        row.style.opacity = '0.5';
+        
+        try {
+            const response = await fetch(window.location.pathname, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id: id })
+            });
             
-            const button = document.querySelector(`.btn-delete[data-id="${id}"]`);
-            const row = document.getElementById(`row_${id}`);
+            const result = await response.json();
             
-            button.disabled = true;
-            button.textContent = '⌛ Удаление...';
-            row.style.opacity = '0.5';
-            
-            try {
-                const response = await fetch('/project/admin.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ id: id })
-                });
+            if (result.success) {
+                row.remove();
+                showMessage('✅ Заявка #' + id + ' успешно удалена');
                 
-                const result = await response.json();
+                const totalCountSpan = document.getElementById('totalCount');
+                const currentCount = parseInt(totalCountSpan.textContent);
+                totalCountSpan.textContent = currentCount - 1;
                 
-                if (result.success) {
-                    row.remove();
-                    showMessage('✅ Заявка #' + id + ' успешно удалена');
-                    
-                    const totalCountSpan = document.getElementById('totalCount');
-                    const currentCount = parseInt(totalCountSpan.textContent);
-                    totalCountSpan.textContent = currentCount - 1;
-                    
-                    const tbody = document.getElementById('tableBody');
-                    if (tbody.children.length === 0) {
-                        tbody.innerHTML = '<tr class="empty-row"><td colspan="9">Нет заявок для отображения</td></tr>';
-                    }
-                } else {
-                    showMessage('❌ Ошибка: ' + (result.error || 'Не удалось удалить заявку'), true);
-                    row.style.opacity = '1';
-                    button.disabled = false;
-                    button.textContent = '🗑️ Удалить';
+                const tbody = document.getElementById('tableBody');
+                if (tbody.children.length === 0) {
+                    tbody.innerHTML = '<tr class="empty-row"><td colspan="9">Нет заявок для отображения</td></tr>';
                 }
-            } catch (error) {
-                console.error('Ошибка:', error);
-                showMessage('❌ Ошибка соединения с сервером', true);
+            } else {
+                showMessage('❌ Ошибка: ' + (result.error || 'Не удалось удалить заявку'), true);
                 row.style.opacity = '1';
                 button.disabled = false;
                 button.textContent = '🗑️ Удалить';
             }
+        } catch (error) {
+            console.error('Ошибка:', error);
+            showMessage('❌ Ошибка соединения с сервером', true);
+            row.style.opacity = '1';
+            button.disabled = false;
+            button.textContent = '🗑️ Удалить';
         }
-        
-        document.querySelectorAll('.btn-delete').forEach(button => {
-            button.addEventListener('click', () => {
-                const id = button.getAttribute('data-id');
-                deleteApplication(id);
-            });
+    }
+    
+    document.querySelectorAll('.btn-delete').forEach(button => {
+        button.addEventListener('click', () => {
+            const id = button.getAttribute('data-id');
+            deleteApplication(id);
         });
-    </script>
+    });
+</script>
 </body>
 </html>
