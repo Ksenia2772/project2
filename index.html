@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style-2.css">
 </head>
 <body>
     <!-- НАВИГАЦИЯ -->
@@ -106,7 +106,6 @@
                         <span>Контакты</span>
                     </a>
                 </li>
-                
             </ul>
             
             <div class="mobile-menu-footer">
@@ -148,7 +147,7 @@
                     <a href="#contact" class="btn">Связаться с нами</a>
                 </div>
                 <div class="about-image">
-                    <img src="1.jpg" alt="Путешественники в горах">
+                    <img src="https://images.unsplash.com/photo-1488646953014-85cb44e25828?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1335&q=80" alt="Путешественники в горах">
                 </div>
             </div>
         </div>
@@ -348,11 +347,12 @@
                     <div class="form-group">
                         <label for="phone" class="form-label">Телефон *</label>
                         <input type="tel" id="phone" name="phone" class="form-control" required>
+                        <small style="color: #666; font-size: 12px;">Формат: +7XXXXXXXXXX или 8XXXXXXXXXX</small>
                     </div>
                     
                     <div class="form-group">
-                        <label for="tour" class="form-label">Интересующий тур</label>
-                        <select id="tour" name="tour" class="form-control">
+                        <label for="tour" class="form-label">Интересующий тур *</label>
+                        <select id="tour" name="tour" class="form-control" required>
                             <option value="">Выберите тур</option>
                             <option value="paris">Романтический Париж</option>
                             <option value="japan">Загадочная Япония</option>
@@ -390,6 +390,10 @@
                 </div>
                 
                 <p>Телефон: +7 (999) 123-45-67<br>Email: info@worldtravel.com</p>
+            </div>
+            
+            <div class="admin-links" style="margin: 15px 0; text-align: center;">
+                <a href="admin_login.php" style="color: #4a6fa5; text-decoration: none; margin: 0 10px;">🔐 Админ-панель</a>
             </div>
             
             <div class="copyright">
